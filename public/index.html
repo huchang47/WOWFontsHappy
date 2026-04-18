@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>魔兽字体好开心</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0e0e12; --bg2: #16161d; --bg3: #1e1e28;
+            --border: #2a2a3a; --accent: #5599FF; --accent2: #7C61D6;
+            --text: #e0e0e8; --text2: #8888a0; --success: #89C245;
+            --danger: #CC4D4D; --warning: #ff9800; --danger-hover: #FF8080;
+        }
+        body { font-family: 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-bottom: 2px solid var(--accent); padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+        .header h1 { font-size: 22px; background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header .subtitle { color: var(--text2); font-size: 13px; }
+        .container { display: flex; height: calc(100vh - 64px); position: relative; }
+        .panel { display: flex; flex-direction: column; overflow: hidden; }
+        .panel-left { width: 45%; border-right: 1px solid var(--border); }
+        .panel-right { width: 55%; }
+        .resizer { width: 6px; background: var(--border); cursor: col-resize; position: absolute; left: 45%; top: 0; bottom: 0; z-index: 100; transition: background 0.2s; }
+        .resizer:hover { background: var(--accent); }
+        .resizer.dragging { background: var(--accent); }
+        .panel-header { padding: 12px 16px; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+        .panel-header h2 { font-size: 15px; color: var(--accent); flex-shrink: 0; }
+        .panel-body { flex: 1; overflow-y: auto; padding: 12px; }
+        .panel-body::-webkit-scrollbar { width: 24px; }
+        .panel-body::-webkit-scrollbar-track { background: var(--bg2); border-radius: 6px; }
+        .panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 6px; border: 2px solid var(--bg2); }
+        .panel-body::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+        .search-box { flex: 1; position: relative; }
+        .search-box input { width: 100%; padding: 6px 12px 6px 32px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; outline: none; }
+        .search-box input:focus { border-color: var(--accent); }
+        .search-box::before { content: '\1F50D'; position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 12px; }
+        .font-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+        .font-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 12px; cursor: pointer; transition: all 0.2s; position: relative; }
+        .font-card:hover { border-color: var(--danger); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(204,77,77,0.15); }
+        .font-card.selected { border-color: var(--accent2); background: rgba(124,97,214,0.2); }
+        .font-card .font-name { font-size: 13px; font-weight: bold; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 50px; font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif; }
+        .font-card .font-file { font-size: 11px; color: var(--text2); margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'Consolas', 'Microsoft YaHei', monospace; }
+        .font-card .font-preview { font-size: 18px; line-height: 1.4; color: #ccc; min-height: 28px; padding: 4px 0; }
+        body.resizing .font-card { transition: none; }
+        body.resizing .panel-left { will-change: width; }
+        body.resizing .panel-right { will-change: width; }
+        .font-card .font-size { font-size: 10px; color: var(--text2); position: absolute; top: 8px; right: 8px; }
+        .font-card .check-mark { position: absolute; top: 8px; left: 8px; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 11px; display: none; align-items: center; justify-content: center; }
+        .font-card.selected .check-mark { display: flex; }
+        .config-section { margin-bottom: 16px; }
+        .config-section h3 { font-size: 14px; color: var(--accent); margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+        .form-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .form-row label { font-size: 13px; color: var(--text2); min-width: 80px; flex-shrink: 0; }
+        select, .path-input { padding: 7px 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; outline: none; flex: 1; }
+        select:focus, .path-input:focus { border-color: var(--accent); }
+        select option { background: var(--bg2); }
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; transition: all 0.2s; font-weight: bold; }
+        .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255,107,53,0.3); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary:hover { border-color: var(--accent); }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-danger:hover { opacity: 0.9; }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+        .mapping-table { width: 100%; border-collapse: collapse; }
+        .mapping-table th { text-align: left; padding: 8px; font-size: 12px; color: var(--text2); border-bottom: 1px solid var(--border); }
+        .mapping-table td { padding: 8px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+        .mapping-table tr:hover td { background: rgba(255,107,53,0.05); }
+        .mapping-target { font-family: monospace; color: var(--accent); font-weight: bold; font-size: 12px; }
+        .mapping-desc { color: var(--text2); font-size: 11px; margin-top: 2px; }
+        .mapping-source { display: flex; align-items: center; gap: 6px; }
+        .mapping-source select { flex: 1; padding: 5px 8px; font-size: 12px; }
+        .batch-section { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+        .batch-section h3 { color: var(--accent); }
+        .batch-section p { font-size: 12px; color: var(--text2); margin-bottom: 10px; }
+        .action-bar { display: flex; gap: 10px; padding: 12px 16px; background: var(--bg2); border-top: 1px solid var(--border); flex-shrink: 0; align-items: center; }
+        .status-text { font-size: 12px; color: var(--text2); margin-left: auto; }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: #fff; font-size: 13px; z-index: 1000; transform: translateX(120%); transition: transform 0.3s; max-width: 400px; }
+        .toast.show { transform: translateX(0); }
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--danger); }
+        .toast.info { background: #2196f3; }
+        .loading { display: flex; align-items: center; justify-content: center; padding: 40px; color: var(--text2); }
+        .spinner { width: 24px; height: 24px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 10px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .empty-state { text-align: center; padding: 40px; color: var(--text2); }
+        .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+        .version-check { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+        .version-check input[type="checkbox"] { accent-color: var(--accent); }
+        .version-check label { font-size: 13px; cursor: pointer; }
+        .result-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; }
+        .result-item .target { font-family: monospace; color: var(--accent); }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 999; display: flex; align-items: center; justify-content: center; }
+        .modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 24px; max-width: 500px; width: 90%; }
+        .modal h3 { color: var(--accent); margin-bottom: 16px; }
+        .modal .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+        .modal .actions .btn-secondary { background: var(--danger); color: #fff; border: 1px solid var(--danger); }
+        .modal .actions .btn-secondary:hover { background: var(--danger-hover); border-color: var(--danger-hover); color: #fff; }
+        .loading-progress { text-align: center; padding: 20px; color: var(--text2); }
+        .loading-progress .progress-bar { width: 200px; height: 4px; background: var(--border); border-radius: 2px; margin: 10px auto; overflow: hidden; }
+        .loading-progress .progress-bar .fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>魔兽字体好开心 <span style="font-size: 14px; color: var(--accent); font-weight: normal;">黑科力研究所出品</span></h1>
+            <div class="subtitle">浏览系统字体 · 一键替换WoW字体 · 支持多版本多语系</div>
+        </div>
+        <div style="margin-left: auto; text-align: right;">
+            <div style="font-size: 16px; color: var(--accent2); font-weight: bold;">[黑科研]胡里胡涂</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="panel panel-left">
+            <div class="panel-header">
+                <h2>系统字体</h2>
+                <div class="search-box">
+                    <input type="text" id="fontSearch" placeholder="搜索字体名称...">
+                </div>
+                <span id="fontCount" style="font-size:12px;color:var(--text2);white-space:nowrap;"></span>
+            </div>
+            <div class="panel-body" id="fontList">
+                <div class="loading"><div class="spinner"></div>正在加载系统字体...</div>
+            </div>
+            <div class="action-bar">
+                <span class="status-text" id="selectedInfo">未选择字体</span>
+            </div>
+        </div>
+
+        <div class="resizer" id="resizer"></div>
+
+        <div class="panel panel-right">
+            <div class="panel-header">
+                <h2>WoW字体配置</h2>
+            </div>
+            <div class="panel-body" id="configPanel">
+                <div class="config-section">
+                    <h3>WoW安装路径</h3>
+                    <div class="form-row">
+                        <label>游戏目录</label>
+                        <input type="text" class="path-input" id="wowBasePath" placeholder="如: I:\World of Warcraft" onblur="checkManualPath()">
+                        <button class="btn btn-secondary btn-sm" onclick="checkManualPath()">检测路径</button>
+                    </div>
+                    <div id="wowVersions"></div>
+                </div>
+
+                <div class="config-section">
+                    <h3>客户端语系</h3>
+                    <div class="form-row">
+                        <label>语系</label>
+                        <select id="localeSelect" onchange="updateFontMap()">
+                            <option value="zhCN">简体中文 (zhCN)</option>
+                            <option value="enUS">英文 (enUS)</option>
+                            <option value="zhTW">繁体中文 (zhTW)</option>
+                            <option value="koKR">韩文 (koKR)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="batch-section">
+                    <h3>一键统一字体</h3>
+                    <p>选择一个字体，自动复制为当前语系所有WoW字体文件名，实现全局字体替换</p>
+                    <div class="form-row">
+                        <label>选择字体</label>
+                        <select id="batchFontSelect">
+                            <option value="">-- 请先选择左侧字体 --</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="batchCopy()" id="batchCopyBtn" disabled style="padding: 14px 32px; font-size: 16px; font-weight: bold;">一键替换</button>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3>字体映射表</h3>
+                    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">为每个WoW字体槽位指定不同的系统字体，实现精细化字体配置</p>
+                    <table class="mapping-table">
+                        <thead>
+                            <tr><th>WoW字体文件</th><th>功能说明</th><th>系统字体</th></tr>
+                        </thead>
+                        <tbody id="mappingBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="action-bar">
+                <button class="btn btn-primary" onclick="copyFonts()" id="copyBtn" disabled>复制到WoW字体目录</button>
+                <button class="btn btn-danger btn-sm" onclick="showClearConfirm()">恢复默认字体</button>
+                <span class="status-text" id="copyStatus"></span>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+    <div id="modalOverlay" class="modal-overlay" style="display:none;"></div>
+
+    <script>
+        let systemFonts = [];
+        let selectedFonts = new Map();
+        let wowFontMap = {};
+        let currentLocale = 'zhCN';
+        let loadedFontFaces = new Set();
+        let fontLoadQueue = [];
+        let isLoadingFonts = false;
+
+        const PREVIEW_TEXT = '123ABCabc魔兽世界';
+
+        async function init() {
+            // 加载保存的路径
+            loadSavedPath();
+            // 初始化拖拽调整大小
+            initResizer();
+            await Promise.all([loadSystemFonts(), loadWoWVersions()]);
+        }
+
+        // 初始化拖拽调整大小
+        function initResizer() {
+            var resizer = document.getElementById('resizer');
+            var leftPanel = document.querySelector('.panel-left');
+            var rightPanel = document.querySelector('.panel-right');
+            var container = document.querySelector('.container');
+            var isResizing = false;
+            var rafId = null;
+            var pendingWidth = null;
+
+            resizer.addEventListener('mousedown', function(e) {
+                isResizing = true;
+                resizer.classList.add('dragging');
+                document.body.style.cursor = 'col-resize';
+                document.body.classList.add('resizing');
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', function(e) {
+                if (!isResizing) return;
+                
+                var containerRect = container.getBoundingClientRect();
+                var newLeftWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+                
+                // 限制最小和最大宽度
+                if (newLeftWidth < 20) newLeftWidth = 20;
+                if (newLeftWidth > 80) newLeftWidth = 80;
+                
+                pendingWidth = newLeftWidth;
+                
+                // 使用 requestAnimationFrame 节流，避免频繁重绘
+                if (!rafId) {
+                    rafId = requestAnimationFrame(function() {
+                        if (pendingWidth !== null) {
+                            leftPanel.style.width = pendingWidth + '%';
+                            rightPanel.style.width = (100 - pendingWidth) + '%';
+                            resizer.style.left = pendingWidth + '%';
+                            pendingWidth = null;
+                        }
+                        rafId = null;
+                    });
+                }
+            });
+
+            document.addEventListener('mouseup', function() {
+                if (isResizing) {
+                    isResizing = false;
+                    resizer.classList.remove('dragging');
+                    document.body.style.cursor = '';
+                    document.body.classList.remove('resizing');
+                    if (rafId) {
+                        cancelAnimationFrame(rafId);
+                        rafId = null;
+                    }
+                }
+            });
+        }
+
+        // 加载保存的路径
+        function loadSavedPath() {
+            try {
+                var savedPath = localStorage.getItem('wowBasePath');
+                if (savedPath) {
+                    document.getElementById('wowBasePath').value = savedPath;
+                    // 自动检测路径
+                    checkManualPath();
+                }
+            } catch (e) {
+                console.log('无法加载保存的路径');
+            }
+        }
+
+        // 保存路径
+        function savePath(path) {
+            try {
+                if (path) {
+                    localStorage.setItem('wowBasePath', path);
+                }
+            } catch (e) {
+                console.log('无法保存路径');
+            }
+        }
+
+        async function loadSystemFonts() {
+            try {
+                const res = await fetch('/api/system-fonts');
+                const data = await res.json();
+                if (data.success) {
+                    systemFonts = data.fonts;
+                    renderFontList(systemFonts);
+                    updateBatchSelect();
+                    // 开始自动加载字体预览
+                    startFontLoading();
+                } else {
+                    document.getElementById('fontList').innerHTML = '<div class="empty-state"><div class="icon">\u274C</div><div>加载失败: ' + data.error + '</div></div>';
+                }
+            } catch (err) {
+                document.getElementById('fontList').innerHTML = '<div class="empty-state"><div class="icon">\u274C</div><div>连接服务器失败</div></div>';
+            }
+        }
+
+        async function loadWoWVersions() {
+            const res = await fetch('/api/wow-versions');
+            const data = await res.json();
+            if (data.success) {
+                wowFontMap = data.fontMap;
+                updateFontMap();
+            }
+        }
+
+        function getFontFamilyName(filename) {
+            return 'WF_' + filename.replace(/[^a-zA-Z0-9]/g, '_');
+        }
+
+        // 开始自动加载所有字体
+        function startFontLoading() {
+            fontLoadQueue = systemFonts.map(f => f.filename);
+            if (!isLoadingFonts) {
+                loadNextBatch();
+            }
+        }
+
+        // 分批加载字体，避免卡顿
+        async function loadNextBatch() {
+            if (fontLoadQueue.length === 0) {
+                isLoadingFonts = false;
+                return;
+            }
+            
+            isLoadingFonts = true;
+            const batchSize = 10; // 每批加载10个
+            const batch = fontLoadQueue.splice(0, batchSize);
+            
+            await Promise.all(batch.map(filename => loadFontForPreview(filename)));
+            
+            // 使用 requestAnimationFrame 确保UI流畅
+            requestAnimationFrame(() => {
+                setTimeout(loadNextBatch, 50);
+            });
+        }
+
+        async function loadFontForPreview(filename) {
+            const familyName = getFontFamilyName(filename);
+            if (loadedFontFaces.has(familyName)) return;
+            
+            try {
+                const fontFace = new FontFace(
+                    familyName,
+                    'url(/api/preview-font/' + encodeURIComponent(filename) + ')'
+                );
+                const loaded = await fontFace.load();
+                document.fonts.add(loaded);
+                loadedFontFaces.add(familyName);
+                
+                // 更新所有使用该字体的元素
+                const els = document.querySelectorAll('[data-preview-font="' + filename + '"]');
+                els.forEach(el => { 
+                    el.style.fontFamily = "'" + familyName + "', 'Microsoft YaHei', sans-serif"; 
+                });
+            } catch (e) {
+                // 字体加载失败，使用系统默认字体
+            }
+        }
+
+        function renderFontList(fonts) {
+            var container = document.getElementById('fontList');
+            document.getElementById('fontCount').textContent = '共 ' + fonts.length + ' 个字体';
+
+            if (fonts.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="icon">\uD83D\uDD0D</div><div>未找到匹配的字体</div></div>';
+                return;
+            }
+
+            var html = fonts.map(function(f) {
+                var sizeStr = f.size > 1048576 ? (f.size / 1048576).toFixed(1) + ' MB' : (f.size / 1024).toFixed(0) + ' KB';
+                var isSelected = selectedFonts.has(f.filename);
+                var escapedName = f.filename.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                var familyName = getFontFamilyName(f.filename);
+                var isLoaded = loadedFontFaces.has(familyName);
+                
+                return '<div class="font-card ' + (isSelected ? 'selected' : '') + '" onclick="toggleFont(\'' + escapedName + '\', event)" data-filename="' + f.filename + '">' +
+                    '<div class="check-mark">\u2713</div>' +
+                    '<div class="font-size">' + sizeStr + '</div>' +
+                    '<div class="font-name" title="' + f.displayName + '">' + f.displayName + '</div>' +
+                    '<div class="font-file" title="' + f.filename + '">' + f.filename + '</div>' +
+                    '<div class="font-preview" data-preview-font="' + f.filename + '" style="font-family: ' + (isLoaded ? "'" + familyName + "'" : "'Microsoft YaHei', sans-serif") + '">' + PREVIEW_TEXT + '</div>' +
+                '</div>';
+            }).join('');
+
+            container.innerHTML = '<div class="font-grid">' + html + '</div>';
+        }
+
+        function toggleFont(filename, event) {
+            if (selectedFonts.has(filename)) {
+                selectedFonts.delete(filename);
+            } else {
+                selectedFonts.set(filename, systemFonts.find(function(f) { return f.filename === filename; }));
+            }
+            var card = event.currentTarget;
+            card.classList.toggle('selected');
+            updateSelectedInfo();
+            updateBatchSelect();
+            updateMappingSelects();
+        }
+
+        function updateSelectedInfo() {
+            var info = document.getElementById('selectedInfo');
+            var count = selectedFonts.size;
+            info.textContent = count > 0 ? '已选择 ' + count + ' 个字体' : '未选择字体';
+            document.getElementById('copyBtn').disabled = count === 0;
+        }
+
+        function updateBatchSelect() {
+            var select = document.getElementById('batchFontSelect');
+            var currentVal = select.value;
+            select.innerHTML = '<option value="">-- 请先选择左侧字体 --</option>';
+            selectedFonts.forEach(function(font, filename) {
+                var opt = document.createElement('option');
+                opt.value = filename;
+                opt.textContent = font.displayName;
+                select.appendChild(opt);
+            });
+            if (currentVal && selectedFonts.has(currentVal)) {
+                select.value = currentVal;
+            }
+            document.getElementById('batchCopyBtn').disabled = !select.value;
+            select.onchange = function() {
+                document.getElementById('batchCopyBtn').disabled = !select.value;
+            };
+        }
+
+        function updateFontMap() {
+            currentLocale = document.getElementById('localeSelect').value;
+            var mappings = wowFontMap[currentLocale] || [];
+            var tbody = document.getElementById('mappingBody');
+
+            tbody.innerHTML = mappings.map(function(m, i) {
+                var optionsHtml = '<option value="">-- 未指定 --</option>';
+                selectedFonts.forEach(function(font, filename) {
+                    optionsHtml += '<option value="' + filename + '">' + font.displayName + '</option>';
+                });
+                return '<tr>' +
+                    '<td><span class="mapping-target">' + m.name + '</span></td>' +
+                    '<td><div class="mapping-desc">' + m.desc + '</div></td>' +
+                    '<td><div class="mapping-source"><select class="mapping-font-select" data-target="' + m.name + '" data-index="' + i + '">' + optionsHtml + '</select></div></td>' +
+                '</tr>';
+            }).join('');
+        }
+
+        function updateMappingSelects() {
+            var selects = document.querySelectorAll('.mapping-font-select');
+            selects.forEach(function(sel) {
+                var currentVal = sel.value;
+                var target = sel.dataset.target;
+                var optionsHtml = '<option value="">-- 未指定 --</option>';
+                selectedFonts.forEach(function(font, filename) {
+                    optionsHtml += '<option value="' + filename + '"' + (filename === currentVal ? ' selected' : '') + '>' + font.displayName + '</option>';
+                });
+                sel.innerHTML = optionsHtml;
+            });
+        }
+
+        document.getElementById('fontSearch').addEventListener('input', function(e) {
+            var keyword = e.target.value.toLowerCase();
+            var filtered = systemFonts.filter(function(f) {
+                return f.displayName.toLowerCase().includes(keyword) || f.filename.toLowerCase().includes(keyword);
+            });
+            renderFontList(filtered);
+        });
+
+        // 检查手动输入的路径
+        async function checkManualPath() {
+            var manualPath = document.getElementById('wowBasePath').value.trim();
+            if (!manualPath) return;
+            
+            try {
+                var res = await fetch('/api/detect-wow', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+                    body: JSON.stringify({ searchPaths: [manualPath] })
+                });
+                var data = await res.json();
+                if (data.success && data.installations.length > 0) {
+                    var inst = data.installations[0];
+                    renderWoWVersions(inst.versions);
+                    showToast('已识别该路径下的WoW版本', 'success');
+                    // 保存路径到本地存储
+                    savePath(manualPath);
+                } else {
+                    document.getElementById('wowVersions').innerHTML = 
+                        '<div style="color:var(--warning);font-size:12px;padding:8px;">' +
+                        '⚠️ 该路径下未找到WoW版本目录(_retail_/_classic_等)<br>' +
+                        '请确保路径正确，或手动创建版本目录' +
+                        '</div>';
+                }
+            } catch (err) {
+                console.error('检查路径失败:', err);
+            }
+        }
+
+        function renderWoWVersions(versions) {
+            var container = document.getElementById('wowVersions');
+            container.innerHTML = versions.map(function(v) {
+                return '<div class="version-check">' +
+                    '<input type="checkbox" id="ver_' + v.key + '" value="' + v.key + '" checked>' +
+                    '<label for="ver_' + v.key + '">' + v.label + '</label>' +
+                    '<span style="font-size:11px;color:var(--text2);margin-left:auto;">' +
+                        (v.fontsDirExists ? '\u2705 Fonts目录已存在' : '\u26A0\uFE0F Fonts目录将自动创建') +
+                    '</span>' +
+                '</div>';
+            }).join('');
+        }
+
+        function getSelectedVersions() {
+            var basePath = document.getElementById('wowBasePath').value.trim();
+            if (!basePath) return [];
+            var checkboxes = document.querySelectorAll('#wowVersions input[type="checkbox"]:checked');
+            return Array.from(checkboxes).map(function(cb) { return cb.value; });
+        }
+
+        async function batchCopy() {
+            var fontFile = document.getElementById('batchFontSelect').value;
+            if (!fontFile) return showToast('请选择一个字体', 'error');
+
+            var versions = getSelectedVersions();
+            if (versions.length === 0) return showToast('请先设置WoW路径并选择版本', 'error');
+
+            var basePath = document.getElementById('wowBasePath').value.trim();
+            var allResults = [];
+
+            for (var i = 0; i < versions.length; i++) {
+                var ver = versions[i];
+                var fontsPath = basePath + '\\' + ver + '\\Fonts';
+                try {
+                    var res = await fetch('/api/batch-copy', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+                        body: JSON.stringify({
+                            sourceFont: fontFile,
+                            wowFontsPath: fontsPath,
+                            locale: currentLocale
+                        })
+                    });
+                    var data = await res.json();
+                    if (data.success) {
+                        allResults.push({ version: ver, results: data.results });
+                    } else {
+                        allResults.push({ version: ver, error: data.error });
+                    }
+                } catch (err) {
+                    allResults.push({ version: ver, error: err.message });
+                }
+            }
+
+            showCopyResults(allResults, true);
+        }
+
+        async function copyFonts() {
+            var versions = getSelectedVersions();
+            if (versions.length === 0) return showToast('请先设置WoW路径并选择版本', 'error');
+
+            var selects = document.querySelectorAll('.mapping-font-select');
+            var sourceFonts = [];
+            selects.forEach(function(sel) {
+                if (sel.value) {
+                    sourceFonts.push({
+                        filename: sel.value,
+                        targetName: sel.dataset.target
+                    });
+                }
+            });
+
+            if (sourceFonts.length === 0) return showToast('请在映射表中为至少一个字体槽位指定系统字体', 'error');
+
+            var basePath = document.getElementById('wowBasePath').value.trim();
+            var allResults = [];
+
+            for (var i = 0; i < versions.length; i++) {
+                var ver = versions[i];
+                var fontsPath = basePath + '\\' + ver + '\\Fonts';
+                try {
+                    var res = await fetch('/api/copy-fonts', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+                        body: JSON.stringify({
+                            sourceFonts: sourceFonts,
+                            wowFontsPath: fontsPath,
+                            locale: currentLocale
+                        })
+                    });
+                    var data = await res.json();
+                    if (data.success) {
+                        allResults.push({ version: ver, results: data.results });
+                    } else {
+                        allResults.push({ version: ver, error: data.error });
+                    }
+                } catch (err) {
+                    allResults.push({ version: ver, error: err.message });
+                }
+            }
+
+            showCopyResults(allResults, false);
+        }
+
+        function showCopyResults(allResults, isBatch) {
+            var totalSuccess = 0, totalFail = 0;
+            allResults.forEach(function(r) {
+                if (r.results) {
+                    r.results.forEach(function(x) { if (x.success) totalSuccess++; else totalFail++; });
+                }
+            });
+
+            if (totalFail === 0) {
+                showToast((isBatch ? '一键替换' : '自定义映射') + '完成！成功复制 ' + totalSuccess + ' 个字体文件', 'success');
+            } else {
+                showToast('完成！成功 ' + totalSuccess + ' 个，失败 ' + totalFail + ' 个', 'warning');
+            }
+
+            var detail = allResults.map(function(r) {
+                var verLabel = r.version;
+                if (r.error) return '<div style="color:var(--danger);">\u274C ' + verLabel + ': ' + r.error + '</div>';
+                return r.results.map(function(x) {
+                    return '<div class="result-item"><span>' + (x.success ? '\u2705' : '\u274C') + '</span><span class="target">' + x.target + '</span>' + (x.error ? '<span style="color:var(--danger);font-size:12px;">' + x.error + '</span>' : '') + '</div>';
+                }).join('');
+            }).join('<hr style="border-color:var(--border);margin:8px 0;">');
+
+            showModal('复制结果', detail);
+        }
+
+        function showClearConfirm() {
+            var versions = getSelectedVersions();
+            if (versions.length === 0) return showToast('请先设置WoW路径并选择版本', 'error');
+
+            showModal('确认恢复默认字体',
+                '<p>确定要删除WoW字体目录中的所有自定义字体文件吗？</p><p style="color:var(--text2);font-size:12px;margin-top:8px;">删除后游戏将使用内置默认字体。此操作不可撤销。</p>',
+                async function() {
+                    var basePath = document.getElementById('wowBasePath').value.trim();
+                    var deleted = 0;
+                    for (var i = 0; i < versions.length; i++) {
+                        var fontsPath = basePath + '\\' + versions[i] + '\\Fonts';
+                        try {
+                            var res = await fetch('/api/clear-fonts', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json; charset=utf-8' },
+                                body: JSON.stringify({ wowFontsPath: fontsPath })
+                            });
+                            var data = await res.json();
+                            if (data.success) deleted += data.deleted;
+                        } catch(e) {}
+                    }
+                    showToast('已删除 ' + deleted + ' 个字体文件，游戏将使用默认字体', 'success');
+                    hideModal();
+                }
+            );
+        }
+
+        function showToast(msg, type) {
+            type = type || 'info';
+            var toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = 'toast ' + type + ' show';
+            setTimeout(function() { toast.classList.remove('show'); }, 3000);
+        }
+
+        function showModal(title, content, onConfirm) {
+            var overlay = document.getElementById('modalOverlay');
+            overlay.style.display = 'flex';
+            var actionsHtml = '<button class="btn btn-secondary" onclick="hideModal()">关闭</button>';
+            if (onConfirm) {
+                actionsHtml += '<button class="btn btn-danger" id="modalConfirmBtn">确认</button>';
+            }
+            overlay.innerHTML = '<div class="modal"><h3>' + title + '</h3><div>' + content + '</div><div class="actions">' + actionsHtml + '</div></div>';
+            if (onConfirm) {
+                document.getElementById('modalConfirmBtn').onclick = onConfirm;
+            }
+        }
+
+        function hideModal() {
+            document.getElementById('modalOverlay').style.display = 'none';
+        }
+
+        init();
+    </script>
+</body>
+</html>

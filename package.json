@@ -1,0 +1,20 @@
+{
+  "name": "wowfontshappy",
+  "version": "1.0.0",
+  "description": "魔兽字体好开心 - 浏览系统字体，一键替换WoW字体",
+  "main": "server.js",
+  "bin": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build": "pkg . --targets node18-win-x64 --output WoWFontsHappy.exe"
+  },
+  "pkg": {
+    "assets": [
+      "public/**/*"
+    ]
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "fontkit": "^2.0.4"
+  }
+}
