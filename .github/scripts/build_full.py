@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-GitHub Actions - 完整版打包脚本
-包含 Node.js 运行库
+GitHub Actions - Full Version Build Script
+Includes Node.js runtime
 """
 
 import os
@@ -14,7 +14,7 @@ from pathlib import Path
 
 
 def main():
-    # 路径设置
+    # Path settings
     repo_root = Path(__file__).parent.parent.parent
     app_dir = repo_root
     node_dir = repo_root / "node"
@@ -22,31 +22,31 @@ def main():
     build_dir = repo_root / "build"
     
     print("=" * 50)
-    print("  魔兽字体好开心 - 完整版打包")
-    print("  (包含 Node.js 运行时)")
+    print("  WoWFontsHappy - Full Version Build")
+    print("  (Includes Node.js runtime)")
     print("=" * 50)
     
-    # 检查 Node.js 目录
+    # Check Node.js directory
     if not node_dir.exists():
-        print(f"[错误] 找不到 Node.js 目录: {node_dir}")
-        print("请确保已下载并解压 Node.js 到 ./node")
+        print(f"[ERROR] Node.js directory not found: {node_dir}")
+        print("Please download and extract Node.js to ./node")
         return 1
     
-    # 创建输出目录
+    # Create output directory
     output_dir.mkdir(exist_ok=True)
     
-    # 创建临时目录
+    # Create temporary directory
     with tempfile.TemporaryDirectory() as temp:
         temp_dir = Path(temp)
         
-        # 创建 launcher
-        launcher_code = f'''
+        # Create launcher
+        launcher_code = '''
 import os
 import sys
 import subprocess
 from pathlib import Path
 
-# 获取资源路径
+# Get resource path
 if hasattr(sys, '_MEIPASS'):
     base = Path(sys._MEIPASS)
 else:
@@ -56,24 +56,23 @@ bundle_dir = base / "bundle"
 app_dir = bundle_dir / "app"
 node_dir = bundle_dir / "node"
 node_exe = node_dir / "node.exe"
-        npm_exe = node_dir / "npm.cmd"
 server_js = app_dir / "server.js"
 public_dir = app_dir / "public"
 index_html = public_dir / "index.html"
 
 if not index_html.exists():
-    print("[错误] 找不到 index.html")
+    print("[ERROR] index.html not found")
     sys.exit(1)
 
-# 终止占用 3456 端口的进程
-print("[检查] 检查端口 3456 占用情况...")
+# Kill process using port 3456
+print("[CHECK] Checking port 3456...")
 try:
     result = subprocess.run(
         ['netstat', '-ano', '|', 'findstr', ':3456'],
         capture_output=True, text=True, shell=True
     )
     if ':3456' in result.stdout:
-        print("[警告] 发现占用 3456 端口的进程，正在终止...")
+        print("[WARN] Port 3456 in use, terminating process...")
         for line in result.stdout.strip().splitlines():
             if ':3456' in line:
                 parts = line.strip().split()
@@ -81,31 +80,31 @@ try:
                     pid = parts[-1]
                     try:
                         subprocess.run(['taskkill', '/F', '/PID', pid], capture_output=True)
-                        print(f"[OK] 已终止进程 PID: {{pid}}")
+                        print(f"[OK] Terminated PID: {pid}")
                     except:
                         pass
         import time
         time.sleep(1)
     else:
-        print("[OK] 端口 3456 未被占用")
+        print("[OK] Port 3456 is free")
 except Exception as e:
-    print(f"[警告] 检查端口时出错: {{e}}")
+    print(f"[WARN] Error checking port: {e}")
 
 print("=" * 50)
-print("  魔兽字体好开心")
+print("  WoWFontsHappy")
 print("=" * 50)
-print("  地址: http://localhost:3456")
-print("  按 Ctrl+C 停止")
+print("  URL: http://localhost:3456")
+print("  Press Ctrl+C to stop")
 print("=" * 50)
 print()
 
-# 设置环境
+# Set environment
 env = os.environ.copy()
 env["PATH"] = str(node_dir) + os.pathsep + env.get("PATH", "")
 env["NODE_ENV"] = "production"
 env["PUBLIC_DIR"] = str(public_dir)
 
-# 启动服务器
+# Start server
 process = subprocess.Popen(
     [str(node_exe), str(server_js)],
     cwd=app_dir,
@@ -117,17 +116,17 @@ process = subprocess.Popen(
     errors='replace'
 )
 
-# 读取输出
+# Read output
 try:
     for line in process.stdout:
         print(line, end='')
 except KeyboardInterrupt:
     print("")
-    print("正在停止服务器...")
+    print("Stopping server...")
 except Exception as e:
-    print(f"[错误] 读取输出时出错: {{e}}")
+    print(f"[ERROR] Error reading output: {e}")
 
-# 终止进程
+# Terminate process
 if process.poll() is None:
     process.terminate()
     try:
@@ -140,19 +139,19 @@ if process.poll() is None:
         with open(launcher_path, "w", encoding="utf-8") as f:
             f.write(launcher_code)
         
-        print("\n准备资源...")
+        print("\nPreparing resources...")
         
-        # 准备 bundle
+        # Prepare bundle
         bundle = temp_dir / "bundle"
-        # 复制 app 目录，排除不需要的文件
+        # Copy app directory, exclude unnecessary files
         def ignore_app(dir, files):
             return ['.git', '.github', 'dist', 'build', 'node_modules', '.gitignore', 'README.md']
         shutil.copytree(app_dir, bundle / "app", ignore=ignore_app)
-        # 复制 node 目录
+        # Copy node directory
         shutil.copytree(node_dir, bundle / "node", 
                        ignore=shutil.ignore_patterns('*.pdb', 'CHANGELOG*', 'LICENSE', 'README*'))
-        # 在 bundle/app 中安装生产依赖
-        print("[安装] npm 生产依赖...")
+        # Install production dependencies in bundle/app
+        print("[INSTALL] npm production dependencies...")
         npm_result = subprocess.run(
             [str(node_dir / "npm.cmd"), "ci", "--production"],
             cwd=bundle / "app",
@@ -160,17 +159,17 @@ if process.poll() is None:
             text=True
         )
         if npm_result.returncode != 0:
-            print(f"[警告] npm install 失败: {npm_result.stderr}")
+            print(f"[WARN] npm install failed: {npm_result.stderr}")
         else:
-            print("[OK] npm 依赖安装完成")
+            print("[OK] npm dependencies installed")
         
-        print("构建 EXE...")
+        print("Building EXE...")
         
-        # 清理 build 目录
+        # Clean build directory
         if build_dir.exists():
             shutil.rmtree(build_dir)
         
-        # PyInstaller 参数
+        # PyInstaller arguments
         bundle_str = str(bundle).replace('\\', '/')
         launcher_str = str(launcher_path).replace('\\', '/')
         
@@ -188,14 +187,14 @@ if process.poll() is None:
         ]
         
         subprocess.run(args, check=True)
-        print("[OK] 完整版构建完成")
+        print("[OK] Full version build complete")
         
-        # 显示文件大小
+        # Show file size
         exe_path = output_dir / "WoWFontsHappy-Full.exe"
         if exe_path.exists():
             size = exe_path.stat().st_size / (1024 * 1024)
-            print(f"   文件: {exe_path}")
-            print(f"   大小: {size:.1f} MB")
+            print(f"   File: {exe_path}")
+            print(f"   Size: {size:.1f} MB")
     
     return 0
 
