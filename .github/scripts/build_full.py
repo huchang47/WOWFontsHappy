@@ -17,7 +17,7 @@ def main():
     # 路径设置
     repo_root = Path(__file__).parent.parent.parent
     app_dir = repo_root
-    node_dir = repo_root / "node" / "node-v18.20.4-win-x64"
+    node_dir = repo_root / "node"
     output_dir = repo_root / "dist"
     build_dir = repo_root / "build"
     
@@ -29,7 +29,7 @@ def main():
     # 检查 Node.js 目录
     if not node_dir.exists():
         print(f"[错误] 找不到 Node.js 目录: {node_dir}")
-        print("请确保已下载并解压 Node.js 到 ./node/node-v18.20.4-win-x64")
+        print("请确保已下载并解压 Node.js 到 ./node")
         return 1
     
     # 创建输出目录
@@ -56,6 +56,7 @@ bundle_dir = base / "bundle"
 app_dir = bundle_dir / "app"
 node_dir = bundle_dir / "node"
 node_exe = node_dir / "node.exe"
+        npm_exe = node_dir / "npm.cmd"
 server_js = app_dir / "server.js"
 public_dir = app_dir / "public"
 index_html = public_dir / "index.html"
@@ -143,9 +144,25 @@ if process.poll() is None:
         
         # 准备 bundle
         bundle = temp_dir / "bundle"
-        shutil.copytree(app_dir, bundle / "app")
+        # 复制 app 目录，排除不需要的文件
+        def ignore_app(dir, files):
+            return ['.git', '.github', 'dist', 'build', 'node_modules', '.gitignore', 'README.md']
+        shutil.copytree(app_dir, bundle / "app", ignore=ignore_app)
+        # 复制 node 目录
         shutil.copytree(node_dir, bundle / "node", 
                        ignore=shutil.ignore_patterns('*.pdb', 'CHANGELOG*', 'LICENSE', 'README*'))
+        # 在 bundle/app 中安装生产依赖
+        print("[安装] npm 生产依赖...")
+        npm_result = subprocess.run(
+            [str(node_dir / "npm.cmd"), "ci", "--production"],
+            cwd=bundle / "app",
+            capture_output=True,
+            text=True
+        )
+        if npm_result.returncode != 0:
+            print(f"[警告] npm install 失败: {npm_result.stderr}")
+        else:
+            print("[OK] npm 依赖安装完成")
         
         print("构建 EXE...")
         

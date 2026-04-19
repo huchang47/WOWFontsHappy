@@ -7,6 +7,9 @@ on:
       - 'v*'
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: windows-latest
@@ -38,7 +41,8 @@ jobs:
       run: |
         $nodeUrl = "https://nodejs.org/dist/v18.20.4/node-v18.20.4-win-x64.zip"
         Invoke-WebRequest -Uri $nodeUrl -OutFile "node.zip"
-        Expand-Archive -Path "node.zip" -DestinationPath "./node" -Force
+        Expand-Archive -Path "node.zip" -DestinationPath "." -Force
+        Rename-Item -Path "node-v18.20.4-win-x64" -NewName "node" -Force
         
     - name: Build Full Version
       run: |
@@ -57,7 +61,7 @@ jobs:
         
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/v')
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         files: |
           dist/*.exe
