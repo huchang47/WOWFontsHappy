@@ -18,9 +18,9 @@
         .header .subtitle { color: var(--text2); font-size: 13px; }
         .container { display: flex; height: calc(100vh - 64px); position: relative; }
         .panel { display: flex; flex-direction: column; overflow: hidden; }
-        .panel-left { width: 45%; border-right: 1px solid var(--border); }
-        .panel-right { width: 55%; }
-        .resizer { width: 6px; background: var(--border); cursor: col-resize; position: absolute; left: 45%; top: 0; bottom: 0; z-index: 100; transition: background 0.2s; }
+        .panel-left { width: 30%; border-right: 1px solid var(--border); }
+        .panel-right { width: 70%; }
+        .resizer { width: 6px; background: var(--border); cursor: col-resize; position: absolute; left: 30%; top: 0; bottom: 0; z-index: 100; transition: background 0.2s; }
         .resizer:hover { background: var(--accent); }
         .resizer.dragging { background: var(--accent); }
         .panel-header { padding: 12px 16px; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
@@ -106,7 +106,7 @@
     <div class="header">
         <div>
             <h1>魔兽字体好开心 <span style="font-size: 14px; color: var(--accent); font-weight: normal;">黑科力研究所出品</span></h1>
-            <div class="subtitle">浏览系统字体 · 一键替换WoW字体 · 支持多版本多语系</div>
+            <div class="subtitle">浏览系统字体 · 一键替换WoW字体 · 支持多版本多语言</div>
         </div>
         <div style="margin-left: auto; text-align: right;">
             <div style="font-size: 16px; color: var(--accent2); font-weight: bold;">[黑科研]胡里胡涂</div>
@@ -116,31 +116,13 @@
     <div class="container">
         <div class="panel panel-left">
             <div class="panel-header">
-                <h2>系统字体</h2>
-                <div class="search-box">
-                    <input type="text" id="fontSearch" placeholder="搜索字体名称...">
-                </div>
-                <span id="fontCount" style="font-size:12px;color:var(--text2);white-space:nowrap;"></span>
-            </div>
-            <div class="panel-body" id="fontList">
-                <div class="loading"><div class="spinner"></div>正在加载系统字体...</div>
-            </div>
-            <div class="action-bar">
-                <span class="status-text" id="selectedInfo">未选择字体</span>
-            </div>
-        </div>
-
-        <div class="resizer" id="resizer"></div>
-
-        <div class="panel panel-right">
-            <div class="panel-header">
                 <h2>WoW字体配置</h2>
             </div>
             <div class="panel-body" id="configPanel">
                 <div class="config-section">
                     <h3>WoW安装路径</h3>
                     <div class="form-row">
-                        <label>游戏目录</label>
+                        <label>游戏根目录(所有版本)</label>
                         <input type="text" class="path-input" id="wowBasePath" placeholder="如: I:\World of Warcraft" onblur="checkManualPath()">
                         <button class="btn btn-secondary btn-sm" onclick="checkManualPath()">检测路径</button>
                     </div>
@@ -148,9 +130,9 @@
                 </div>
 
                 <div class="config-section">
-                    <h3>客户端语系</h3>
+                    <h3>客户端语言</h3>
                     <div class="form-row">
-                        <label>语系</label>
+                        <label>语言</label>
                         <select id="localeSelect" onchange="updateFontMap()">
                             <option value="zhCN">简体中文 (zhCN)</option>
                             <option value="enUS">英文 (enUS)</option>
@@ -161,12 +143,12 @@
                 </div>
 
                 <div class="batch-section">
-                    <h3>一键统一字体</h3>
-                    <p>选择一个字体，自动复制为当前语系所有WoW字体文件名，实现全局字体替换</p>
+                    <h3>一键替换字体</h3>
+                    <p>选择一个字体，自动复制为当前语言所有WoW字体文件名，实现全局字体替换</p>
                     <div class="form-row">
                         <label>选择字体</label>
                         <select id="batchFontSelect">
-                            <option value="">-- 请先选择左侧字体 --</option>
+                            <option value="">-- 请先选择右侧字体 --</option>
                         </select>
                         <button class="btn btn-primary" onclick="batchCopy()" id="batchCopyBtn" disabled style="padding: 14px 32px; font-size: 16px; font-weight: bold;">一键替换</button>
                     </div>
@@ -184,9 +166,28 @@
                 </div>
             </div>
             <div class="action-bar">
-                <button class="btn btn-primary" onclick="copyFonts()" id="copyBtn" disabled>复制到WoW字体目录</button>
+                <button class="btn btn-primary" onclick="copyFonts()" id="copyBtn" disabled>精细化设置字体</button>
                 <button class="btn btn-danger btn-sm" onclick="showClearConfirm()">恢复默认字体</button>
+                <span style="font-size:12px;color:var(--text2);margin-left:10px;">[一键替换]和字体映射表的精细化设置二选一即可，亦可嵌套使用</span>
                 <span class="status-text" id="copyStatus"></span>
+            </div>
+        </div>
+
+        <div class="resizer" id="resizer"></div>
+
+        <div class="panel panel-right">
+            <div class="panel-header">
+                <h2>系统字体</h2>
+                <div class="search-box">
+                    <input type="text" id="fontSearch" placeholder="搜索字体名称...">
+                </div>
+                <span id="fontCount" style="font-size:12px;color:var(--text2);white-space:nowrap;"></span>
+            </div>
+            <div class="panel-body" id="fontList">
+                <div class="loading"><div class="spinner"></div>正在加载系统字体...</div>
+            </div>
+            <div class="action-bar">
+                <span class="status-text" id="selectedInfo">未选择字体</span>
             </div>
         </div>
     </div>
@@ -428,7 +429,7 @@
         function updateBatchSelect() {
             var select = document.getElementById('batchFontSelect');
             var currentVal = select.value;
-            select.innerHTML = '<option value="">-- 请先选择左侧字体 --</option>';
+            select.innerHTML = '<option value="">-- 请先选择右侧字体(可多选) --</option>';
             selectedFonts.forEach(function(font, filename) {
                 var opt = document.createElement('option');
                 opt.value = filename;

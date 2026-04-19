@@ -5,8 +5,6 @@ on:
     branches: [ main, master ]
     tags:
       - 'v*'
-  pull_request:
-    branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
@@ -23,26 +21,46 @@ jobs:
         node-version: '18'
         cache: 'npm'
         
-    - name: Install dependencies
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Install Node.js dependencies
       run: npm ci
       
-    - name: Install pkg
-      run: npm install -g pkg
-      
-    - name: Build executable
-      run: pkg . --targets node18-win-x64 --output WoWFontsHappy.exe
-      
-    - name: Upload artifact
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        
+    - name: Download Node.js binary
+      run: |
+        $nodeUrl = "https://nodejs.org/dist/v18.20.4/node-v18.20.4-win-x64.zip"
+        Invoke-WebRequest -Uri $nodeUrl -OutFile "node.zip"
+        Expand-Archive -Path "node.zip" -DestinationPath "./node" -Force
+        
+    - name: Build Full Version
+      run: |
+        python .github/scripts/build_full.py
+        
+    - name: Build Mini Version
+      run: |
+        python .github/scripts/build_mini.py
+        
+    - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: WoWFontsHappy
-        path: WoWFontsHappy.exe
+        name: WoWFontsHappy-Executables
+        path: |
+          dist/*.exe
         
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/v')
       uses: softprops/action-gh-release@v1
       with:
-        files: WoWFontsHappy.exe
+        files: |
+          dist/*.exe
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

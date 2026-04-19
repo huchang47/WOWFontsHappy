@@ -9,7 +9,17 @@ const app = express();
 const PORT = 3456;
 
 app.use(express.json({ charset: 'utf-8' }));
-app.use(express.static(path.join(__dirname, 'public')));
+
+// 支持通过环境变量指定 public 目录，否则使用默认的 __dirname/public
+const publicDir = process.env.PUBLIC_DIR || path.join(__dirname, 'public');
+
+// 根路径返回 index.html
+app.get('/', (req, res) => {
+    res.sendFile(path.join(publicDir, 'index.html'));
+});
+
+// 静态文件服务（禁用默认 index）
+app.use(express.static(publicDir, { index: false }));
 
 const SYSTEM_FONT_DIR = 'C:\\Windows\\Fonts';
 const USER_FONT_DIR = path.join(os.homedir(), 'AppData', 'Local', 'Microsoft', 'Windows', 'Fonts');
