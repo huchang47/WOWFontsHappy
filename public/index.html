@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>魔兽字体好开心</title>
+    <link rel="icon" type="image/x-icon" href="/FontsHappy.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -14,6 +15,7 @@
         }
         body { font-family: 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
         .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-bottom: 2px solid var(--accent); padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+        .header .logo { width: 64px; height: 64px; border-radius: 8px; flex-shrink: 0; }
         .header h1 { font-size: 22px; background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .header .subtitle { color: var(--text2); font-size: 13px; }
         .container { display: flex; height: calc(100vh - 64px); position: relative; }
@@ -104,9 +106,10 @@
 </head>
 <body>
     <div class="header">
+        <img src="/FontsHappy.ico" alt="logo" class="logo">
         <div>
             <h1>魔兽字体好开心 <span style="font-size: 14px; color: var(--accent); font-weight: normal;">黑科力研究所出品</span></h1>
-            <div class="subtitle">浏览系统字体 · 一键替换WoW字体 · 支持多版本多语言</div>
+            <div class="subtitle">浏览字体库 · 一键替换WoW字体 · 支持多版本多语言</div>
         </div>
         <div style="margin-left: auto; text-align: right;">
             <div style="font-size: 16px; color: var(--accent2); font-weight: bold;">[黑科研]胡里胡涂</div>
@@ -156,10 +159,10 @@
 
                 <div class="config-section">
                     <h3>字体映射表</h3>
-                    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">为每个WoW字体槽位指定不同的系统字体，实现精细化字体配置</p>
+                    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">为每个WoW字体槽位指定不同的源字体，实现精细化字体配置</p>
                     <table class="mapping-table">
                         <thead>
-                            <tr><th>WoW字体文件</th><th>功能说明</th><th>系统字体</th></tr>
+                            <tr><th>WoW字体文件</th><th>功能说明</th><th>源字体</th></tr>
                         </thead>
                         <tbody id="mappingBody"></tbody>
                     </table>
@@ -176,15 +179,33 @@
         <div class="resizer" id="resizer"></div>
 
         <div class="panel panel-right">
+            <div class="font-dir-section" style="padding: 12px 16px; background: var(--bg2); border-bottom: 1px solid var(--border);">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                    <span style="font-size: 13px; color: var(--text2); white-space: nowrap;">字体目录:</span>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px;">
+                        <input type="radio" name="fontDirType" value="system" checked onchange="toggleFontDirType()">
+                        <span>系统默认</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px;">
+                        <input type="radio" name="fontDirType" value="custom" onchange="toggleFontDirType()">
+                        <span>自定义</span>
+                    </label>
+                </div>
+                <div id="customFontDirContainer" style="display: none; gap: 8px;">
+                    <input type="text" id="customFontDir" placeholder="例如: D:\\我的字体\\收藏" style="flex: 1; padding: 6px 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; outline: none;">
+                    <button class="btn btn-sm btn-secondary" onclick="fillExamplePath()">示例</button>
+                    <button class="btn btn-sm btn-primary" onclick="applyCustomFontDir()">应用</button>
+                </div>
+            </div>
             <div class="panel-header">
-                <h2>系统字体</h2>
+                <h2 id="fontListTitle">字体库</h2>
                 <div class="search-box">
                     <input type="text" id="fontSearch" placeholder="搜索字体名称...">
                 </div>
                 <span id="fontCount" style="font-size:12px;color:var(--text2);white-space:nowrap;"></span>
             </div>
             <div class="panel-body" id="fontList">
-                <div class="loading"><div class="spinner"></div>正在加载系统字体...</div>
+                <div class="loading"><div class="spinner"></div>正在加载字体库...</div>
             </div>
             <div class="action-bar">
                 <span class="status-text" id="selectedInfo">未选择字体</span>
@@ -211,7 +232,16 @@
             loadSavedPath();
             // 初始化拖拽调整大小
             initResizer();
-            await Promise.all([loadSystemFonts(), loadWoWVersions()]);
+            // 加载保存的字体目录设置
+            const useCustomDir = loadSavedFontDir();
+            if (useCustomDir) {
+                // 如果有自定义目录设置，加载自定义目录的字体
+                await Promise.all([loadSystemFonts(), loadWoWVersions()]);
+                updateFontListTitle('字体库 (自定义)');
+            } else {
+                // 否则加载系统字体
+                await Promise.all([loadSystemFonts(), loadWoWVersions()]);
+            }
         }
 
         // 初始化拖拽调整大小
@@ -297,9 +327,94 @@
             }
         }
 
+        let currentFontDir = null; // 当前使用的自定义字体目录
+
+        // 切换字体目录类型
+        function toggleFontDirType() {
+            const type = document.querySelector('input[name="fontDirType"]:checked').value;
+            const container = document.getElementById('customFontDirContainer');
+            if (type === 'custom') {
+                container.style.display = 'flex';
+            } else {
+                container.style.display = 'none';
+                currentFontDir = null;
+                // 清除保存的自定义目录设置
+                try {
+                    localStorage.removeItem('customFontDir');
+                    localStorage.setItem('fontDirType', 'system');
+                } catch (e) {
+                    console.log('无法保存字体目录设置');
+                }
+                loadSystemFonts();
+                updateFontListTitle('字体库');
+            }
+        }
+
+        // 填充示例路径
+        function fillExamplePath() {
+            const examples = [
+                'D:\\我的字体\\收藏',
+                'C:\\Users\\' + (navigator.userAgent.match(/Windows NT.*?;\s*(\w+)/)?.[1] || 'Username') + '\\Desktop\\字体',
+                'E:\\Fonts'
+            ];
+            const input = document.getElementById('customFontDir');
+            // 如果输入框为空，填充第一个示例；否则循环切换
+            let currentIndex = examples.indexOf(input.value);
+            let nextIndex = (currentIndex + 1) % examples.length;
+            input.value = examples[nextIndex];
+        }
+
+        // 应用自定义字体目录
+        async function applyCustomFontDir() {
+            const dir = document.getElementById('customFontDir').value.trim();
+            if (!dir) {
+                showToast('请输入字体目录路径', 'error');
+                return;
+            }
+            currentFontDir = dir;
+            // 保存自定义目录设置
+            try {
+                localStorage.setItem('customFontDir', dir);
+                localStorage.setItem('fontDirType', 'custom');
+            } catch (e) {
+                console.log('无法保存字体目录设置');
+            }
+            await loadSystemFonts();
+            updateFontListTitle('字体库 (自定义)');
+            showToast('已切换到自定义字体目录', 'success');
+        }
+
+        // 加载保存的字体目录设置
+        function loadSavedFontDir() {
+            try {
+                const savedType = localStorage.getItem('fontDirType');
+                const savedDir = localStorage.getItem('customFontDir');
+                
+                if (savedType === 'custom' && savedDir) {
+                    // 恢复自定义目录设置
+                    document.querySelector('input[name="fontDirType"][value="custom"]').checked = true;
+                    document.getElementById('customFontDir').value = savedDir;
+                    document.getElementById('customFontDirContainer').style.display = 'flex';
+                    currentFontDir = savedDir;
+                    return true; // 表示使用了自定义设置
+                }
+            } catch (e) {
+                console.log('无法加载字体目录设置');
+            }
+            return false; // 使用默认设置
+        }
+
+        // 更新字体列表标题
+        function updateFontListTitle(title) {
+            document.getElementById('fontListTitle').textContent = title || '字体库';
+        }
+
         async function loadSystemFonts() {
             try {
-                const res = await fetch('/api/system-fonts');
+                const url = currentFontDir 
+                    ? `/api/system-fonts?customDir=${encodeURIComponent(currentFontDir)}`
+                    : '/api/system-fonts';
+                const res = await fetch(url);
                 const data = await res.json();
                 if (data.success) {
                     systemFonts = data.fonts;
@@ -360,9 +475,12 @@
             if (loadedFontFaces.has(familyName)) return;
             
             try {
+                const url = currentFontDir 
+                    ? '/api/preview-font/' + encodeURIComponent(filename) + '?customDir=' + encodeURIComponent(currentFontDir)
+                    : '/api/preview-font/' + encodeURIComponent(filename);
                 const fontFace = new FontFace(
                     familyName,
-                    'url(/api/preview-font/' + encodeURIComponent(filename) + ')'
+                    'url(' + url + ')'
                 );
                 const loaded = await fontFace.load();
                 document.fonts.add(loaded);
@@ -586,7 +704,7 @@
                 }
             });
 
-            if (sourceFonts.length === 0) return showToast('请在映射表中为至少一个字体槽位指定系统字体', 'error');
+            if (sourceFonts.length === 0) return showToast('请在映射表中为至少一个字体槽位指定源字体', 'error');
 
             var basePath = document.getElementById('wowBasePath').value.trim();
             var allResults = [];

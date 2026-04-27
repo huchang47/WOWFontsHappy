@@ -241,22 +241,40 @@ function scanFontDirectory(fontDir, registryNames) {
 app.get('/api/system-fonts', (req, res) => {
     try {
         const registryNames = readRegistryFontNames();
+        const customDir = req.query.customDir;
         
-        // 扫描系统字体目录
-        let fonts = scanFontDirectory(SYSTEM_FONT_DIR, registryNames);
+        let fonts = [];
         
-        // 扫描用户字体目录
-        const userFonts = scanFontDirectory(USER_FONT_DIR, registryNames);
-        fonts = fonts.concat(userFonts);
+        if (customDir && fs.existsSync(customDir)) {
+            // 使用自定义字体目录
+            fonts = scanFontDirectory(customDir, registryNames);
+        } else {
+            // 扫描系统字体目录
+            fonts = scanFontDirectory(SYSTEM_FONT_DIR, registryNames);
+            
+            // 扫描用户字体目录
+            const userFonts = scanFontDirectory(USER_FONT_DIR, registryNames);
+            fonts = fonts.concat(userFonts);
+        }
 
         fonts.sort((a, b) => a.displayName.localeCompare(b.displayName, 'zh-CN'));
-        res.json({ success: true, fonts, total: fonts.length });
+        res.json({ success: true, fonts, total: fonts.length, customDir: customDir || null });
     } catch (err) {
         res.json({ success: false, error: err.message });
     }
 });
 
 app.get('/api/preview-font/:filename', (req, res) => {
+    const customDir = req.query.customDir;
+    
+    // 如果指定了自定义目录，优先从自定义目录查找
+    if (customDir && fs.existsSync(customDir)) {
+        const filePath = path.join(customDir, req.params.filename);
+        if (fs.existsSync(filePath)) {
+            return res.sendFile(filePath);
+        }
+    }
+    
     // 首先尝试从系统字体目录查找
     let filePath = path.join(SYSTEM_FONT_DIR, req.params.filename);
     if (fs.existsSync(filePath)) {
