@@ -18,7 +18,11 @@ from pathlib import Path
 class Builder:
     def __init__(self):
         self.repo_root = Path(__file__).parent.parent.parent.absolute()
-        self.source_dir = self.repo_root / "WOWFontsHappy"
+        # GitHub Actions 中代码在仓库根目录，本地开发时在 WOWFontsHappy 子目录
+        if (self.repo_root / "server.js").exists():
+            self.source_dir = self.repo_root
+        else:
+            self.source_dir = self.repo_root / "WOWFontsHappy"
         self.output_dir = self.repo_root / "dist"
         self.build_dir = self.repo_root / "build"
         self.temp_dir = None
