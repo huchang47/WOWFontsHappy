@@ -255,6 +255,6 @@ WoWFontsHappy/
 
 **Made with ❤️ for WoW Players**
 
-[⭐ Star this repo](https://github.com/yourusername/WoWFontsHappy) if you find it helpful!
+[⭐ Star this repo](https://github.com/huchang47/WoWFontsHappy) if you find it helpful!
 
 </div>

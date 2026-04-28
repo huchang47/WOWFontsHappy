@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 GitHub Actions - Mini Version Build Script
-Does not include Node.js runtime
+Does not include Node.js runtime (requires Node.js installed)
 """
 
 import os
@@ -13,30 +13,52 @@ import tempfile
 from pathlib import Path
 
 
-def main():
-    # Path settings
-    repo_root = Path(__file__).parent.parent.parent
-    app_dir = repo_root
-    output_dir = repo_root / "dist"
-    build_dir = repo_root / "build"
-    
-    print("=" * 50)
-    print("  WoWFontsHappy - Mini Version Build")
-    print("  (Requires Node.js installed)")
-    print("=" * 50)
-    
-    # Create output directory
-    output_dir.mkdir(exist_ok=True)
-    
-    # Create temporary directory
-    with tempfile.TemporaryDirectory() as temp:
-        temp_dir = Path(temp)
+class Builder:
+    def __init__(self):
+        self.repo_root = Path(__file__).parent.parent.parent.absolute()
+        self.source_dir = self.repo_root / "WOWFontsHappy"
+        self.output_dir = self.repo_root / "dist"
+        self.build_dir = self.repo_root / "build"
+        self.temp_dir = None
         
-        # Create launcher
+    def prepare_app(self):
+        """准备应用文件"""
+        print("=" * 50)
+        print("Preparing application...")
+        print("=" * 50)
+        
+        self.temp_dir = Path(tempfile.mkdtemp())
+        app_dir = self.temp_dir / "app"
+        
+        # 复制应用文件
+        shutil.copytree(
+            self.source_dir, 
+            app_dir, 
+            ignore=shutil.ignore_patterns(
+                'node_modules', '.git', '*.log', 'dist', 'build', '.github'
+            )
+        )
+        print(f"[OK] Copied app to: {app_dir}")
+        
+        # 安装生产依赖
+        print("[Install] npm production dependencies...")
+        npm_result = subprocess.run(
+            ["npm", "ci", "--production"],
+            cwd=app_dir,
+            capture_output=True,
+            text=True
+        )
+        if npm_result.returncode != 0:
+            print(f"[WARN] npm install output: {npm_result.stderr}")
+        else:
+            print("[OK] npm dependencies installed")
+        
+        return app_dir
+    
+    def create_launcher(self, app_dir):
+        """创建启动器"""
         launcher_code = '''
-import os
-import sys
-import subprocess
+import os, sys, subprocess, time
 from pathlib import Path
 
 # Get app path
@@ -50,7 +72,8 @@ public_dir = app_dir / "public"
 index_html = public_dir / "index.html"
 
 if not index_html.exists():
-    print("[ERROR] index.html not found")
+    print("[ERROR] index.html not found, please rebuild")
+    input("Press Enter to exit...")
     sys.exit(1)
 
 # Check Node.js
@@ -59,6 +82,7 @@ try:
 except:
     print("[ERROR] Node.js not found. Please install Node.js first.")
     print("       Download: https://nodejs.org/")
+    input("Press Enter to exit...")
     sys.exit(1)
 
 # Kill process using port 3456
@@ -80,7 +104,6 @@ try:
                         print(f"[OK] Terminated PID: {pid}")
                     except:
                         pass
-        import time
         time.sleep(1)
     else:
         print("[OK] Port 3456 is free")
@@ -95,7 +118,7 @@ print("  Press Ctrl+C to stop")
 print("=" * 50)
 print()
 
-# Set environment variables
+# Set environment
 env = os.environ.copy()
 env["PUBLIC_DIR"] = str(public_dir)
 
@@ -130,45 +153,85 @@ if process.poll() is None:
     except:
         process.kill()
 '''
-        
-        launcher_path = temp_dir / "launcher.py"
+        launcher_path = self.temp_dir / "launcher.py"
         with open(launcher_path, "w", encoding="utf-8") as f:
             f.write(launcher_code)
+        return launcher_path
+    
+    def build(self, launcher_path, app_dir):
+        """构建 EXE"""
+        print("\n" + "=" * 50)
+        print("Building EXE...")
+        print("=" * 50)
         
-        print("\nBuilding EXE...")
+        # 清理构建目录
+        if self.build_dir.exists():
+            shutil.rmtree(self.build_dir)
+        self.output_dir.mkdir(exist_ok=True)
         
-        # Clean build directory
-        if build_dir.exists():
-            shutil.rmtree(build_dir)
-        
-        # PyInstaller arguments
+        # PyInstaller 参数
         app_dir_str = str(app_dir).replace('\\', '/')
         launcher_str = str(launcher_path).replace('\\', '/')
+        icon_path = str(self.source_dir / "FontsHappy.ico").replace('\\', '/')
         
         args = [
             sys.executable, "-m", "PyInstaller",
-            "--name", "WoWFontsHappy-Mini",
+            "--name", "魔兽字体好开心-精简版",
             "--onefile",
             "--console",
             "--clean",
             "--noconfirm",
-            "--distpath", str(output_dir),
-            "--workpath", str(build_dir),
+            "--icon", icon_path,
+            "--distpath", str(self.output_dir),
+            "--workpath", str(self.build_dir),
             "--add-data", f"{app_dir_str};app",
             launcher_str
         ]
         
         subprocess.run(args, check=True)
-        print("[OK] Mini version build complete")
+        print("[OK] Build complete")
         
-        # Show file size
-        exe_path = output_dir / "WoWFontsHappy-Mini.exe"
+        # 显示文件大小
+        exe_path = self.output_dir / "魔兽字体好开心-精简版.exe"
         if exe_path.exists():
             size = exe_path.stat().st_size / (1024 * 1024)
             print(f"   File: {exe_path}")
             print(f"   Size: {size:.1f} MB")
+        
+        return True
     
-    return 0
+    def cleanup(self):
+        """清理临时文件"""
+        if self.temp_dir and self.temp_dir.exists():
+            shutil.rmtree(self.temp_dir, ignore_errors=True)
+        # 清理 spec 文件
+        spec = self.repo_root / "魔兽字体好开心-精简版.spec"
+        if spec.exists():
+            spec.unlink()
+    
+    def run(self):
+        print("\n" + "=" * 50)
+        print("  WoWFontsHappy - Mini Version Build")
+        print("  (Requires Node.js installed)")
+        print("=" * 50 + "\n")
+        
+        try:
+            app_dir = self.prepare_app()
+            launcher_path = self.create_launcher(app_dir)
+            self.build(launcher_path, app_dir)
+            return 0
+        except Exception as e:
+            print(f"\n[ERROR] {e}")
+            import traceback
+            traceback.print_exc()
+            return 1
+        finally:
+            self.cleanup()
+
+
+def main():
+    builder = Builder()
+    return builder.run()
 
 
 if __name__ == "__main__":

@@ -159,15 +159,23 @@ function safePath(p) {
     return Buffer.from(p, 'utf-8').toString('utf-8');
 }
 
-// 查找字体文件（同时搜索系统目录和用户目录）
-function findFontFile(filename) {
-    // 首先尝试系统字体目录
+// 查找字体文件（同时搜索自定义目录、系统目录和用户目录）
+function findFontFile(filename, customDir) {
+    // 如果指定了自定义目录，优先从自定义目录查找
+    if (customDir) {
+        let filePath = path.join(customDir, filename);
+        if (fs.existsSync(filePath)) {
+            return filePath;
+        }
+    }
+    
+    // 然后尝试系统字体目录
     let filePath = path.join(SYSTEM_FONT_DIR, filename);
     if (fs.existsSync(filePath)) {
         return filePath;
     }
     
-    // 然后尝试用户字体目录
+    // 最后尝试用户字体目录
     filePath = path.join(USER_FONT_DIR, filename);
     if (fs.existsSync(filePath)) {
         return filePath;
@@ -332,7 +340,7 @@ app.post('/api/detect-wow', (req, res) => {
 });
 
 app.post('/api/copy-fonts', (req, res) => {
-    const { sourceFonts, wowFontsPath, locale, customMappings } = req.body;
+    const { sourceFonts, wowFontsPath, locale, customMappings, customDir } = req.body;
 
     if (!sourceFonts || !wowFontsPath || !locale) {
         return res.json({ success: false, error: '缺少必要参数' });
@@ -349,9 +357,9 @@ app.post('/api/copy-fonts', (req, res) => {
                 console.log('目录创建成功');
             } catch (mkdirErr) {
                 console.error('创建目录失败:', mkdirErr.message);
-                return res.json({ 
-                    success: false, 
-                    error: `创建字体目录失败: ${mkdirErr.message}。请确保以管理员身份运行本工具，或手动在WoW目录中创建Fonts文件夹。` 
+                return res.json({
+                    success: false,
+                    error: `创建字体目录失败: ${mkdirErr.message}。请确保以管理员身份运行本工具，或手动在WoW目录中创建Fonts文件夹。`
                 });
             }
         }
@@ -363,7 +371,7 @@ app.post('/api/copy-fonts', (req, res) => {
             const sourceFont = sourceFonts.find(f => f.targetName === mapping.name);
             if (!sourceFont) continue;
 
-            const srcPath = findFontFile(sourceFont.filename);
+            const srcPath = findFontFile(sourceFont.filename, customDir);
             const dstPath = path.join(destPath, mapping.name);
 
             if (!srcPath) {
@@ -387,7 +395,7 @@ app.post('/api/copy-fonts', (req, res) => {
 });
 
 app.post('/api/batch-copy', (req, res) => {
-    const { sourceFont, wowFontsPath, locale } = req.body;
+    const { sourceFont, wowFontsPath, locale, customDir } = req.body;
 
     if (!sourceFont || !wowFontsPath || !locale) {
         return res.json({ success: false, error: '缺少必要参数' });
@@ -404,14 +412,14 @@ app.post('/api/batch-copy', (req, res) => {
                 console.log('目录创建成功');
             } catch (mkdirErr) {
                 console.error('创建目录失败:', mkdirErr.message);
-                return res.json({ 
-                    success: false, 
-                    error: `创建字体目录失败: ${mkdirErr.message}。请确保以管理员身份运行本工具，或手动在WoW目录中创建Fonts文件夹。` 
+                return res.json({
+                    success: false,
+                    error: `创建字体目录失败: ${mkdirErr.message}。请确保以管理员身份运行本工具，或手动在WoW目录中创建Fonts文件夹。`
                 });
             }
         }
 
-        const srcPath = findFontFile(sourceFont);
+        const srcPath = findFontFile(sourceFont, customDir);
         if (!srcPath) {
             return res.json({ success: false, error: '源字体文件不存在' });
         }

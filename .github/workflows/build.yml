@@ -2,7 +2,6 @@ name: Build Executable
 
 on:
   push:
-    branches: [ main, master ]
     tags:
       - 'v*'
   workflow_dispatch:
@@ -32,20 +31,10 @@ jobs:
       with:
         python-version: '3.11'
         
-    - name: Install Node.js dependencies
-      run: npm ci
-      
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         pip install pyinstaller
-        
-    - name: Download Node.js binary
-      run: |
-        $nodeUrl = "https://nodejs.org/dist/v18.20.4/node-v18.20.4-win-x64.zip"
-        Invoke-WebRequest -Uri $nodeUrl -OutFile "node.zip"
-        Expand-Archive -Path "node.zip" -DestinationPath "." -Force
-        Rename-Item -Path "node-v18.20.4-win-x64" -NewName "node" -Force
         
     - name: Build Full Version
       run: |

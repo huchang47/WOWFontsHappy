@@ -672,7 +672,8 @@
                         body: JSON.stringify({
                             sourceFont: fontFile,
                             wowFontsPath: fontsPath,
-                            locale: currentLocale
+                            locale: currentLocale,
+                            customDir: currentFontDir
                         })
                     });
                     var data = await res.json();
@@ -719,7 +720,8 @@
                         body: JSON.stringify({
                             sourceFonts: sourceFonts,
                             wowFontsPath: fontsPath,
-                            locale: currentLocale
+                            locale: currentLocale,
+                            customDir: currentFontDir
                         })
                     });
                     var data = await res.json();
