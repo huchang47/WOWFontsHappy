@@ -1,0 +1,33 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# JavaScript/JSON files - always use LF
+*.js text eol=lf
+*.json text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.jsx text eol=lf
+
+# Rust files - always use LF
+*.rs text eol=lf
+
+# Python files - always use LF
+*.py text eol=lf
+
+# Shell scripts - always use LF
+*.sh text eol=lf
+
+# Windows batch files - use CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary files - never modify
+*.ico binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.svg binary
+*.zip binary
+*.dll binary
+*.pdb binary
+*.rlib binary
