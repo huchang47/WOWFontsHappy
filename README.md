@@ -7,7 +7,6 @@
 **WoWFontsHappy - 魔兽世界字体管理器，浏览系统字体，一键替换WoW字体**
 
 [![License](https://img.shields.io/badge/License-MIT-7C61D6.svg)](LICENSE)
-[![Node.js](https://img.shields.io/badge/Node.js-22+-89C245.svg)](https://nodejs.org/)
 [![Tauri](https://img.shields.io/badge/Tauri-2-24C8DB.svg)](https://tauri.app/)
 [![Platform](https://img.shields.io/badge/Platform-Windows-CC4D%20D.svg)](https://www.microsoft.com/windows)
 
@@ -46,36 +45,7 @@
 
 ## 📥 下载
 
-### 方式一：直接下载可执行文件
-
-前往 [Releases](https://github.com/yourusername/WoWFontsHappy/releases) 页面下载：
-
-| 版本 | 文件名 | 大小 | 说明 |
-|------|--------|------|------|
-| **Tauri安装包** | `魔兽字体好开心_*.exe` | 视版本而定 | 标准桌面客户端安装包，不启动本地服务 |
-| **源码开发版** | `npm run desktop` | - | 仅开发者使用，需要安装 Node.js 与 Rust 工具链 |
-
-> 💡 **推荐**：普通用户使用 Tauri 安装包；开发者从源码运行可使用下方命令。
-
-### 方式二：从源码运行
-
-```bash
-# 克隆仓库
-git clone https://github.com/yourusername/WoWFontsHappy.git
-
-# 进入目录
-cd WoWFontsHappy
-
-# 安装 Node 依赖
-npm install
-
-# 启动桌面客户端
-npm run desktop
-
-# 也可以通过环境变量显式传入 WoW 根目录
-set WOW_GAME_PATH=I:\World of Warcraft
-npm run desktop
-```
+前往 [Releases](https://github.com/yourusername/WoWFontsHappy/releases) 页面下载安装包。
 
 ---
 
@@ -83,7 +53,7 @@ npm run desktop
 
 ### 快速开始
 
-1. **双击运行** `WoWFontsHappy-Full.exe` 或 `WoWFontsHappy-Mini.exe`
+1. **双击运行** `魔兽字体好开心.exe`
 2. **等待加载** - 程序会自动扫描系统字体
 3. **选择字体** - 在右侧点击你喜欢的字体卡片
 4. **配置路径** - 输入或自动检测 WoW 安装目录
@@ -128,35 +98,23 @@ npm run desktop
 
 ### 环境要求
 
-- [Node.js](https://nodejs.org/) 22 或更高版本
-- [Rust](https://rustup.rs/) 稳定版工具链（Tauri 开发/打包）
+- [Rust](https://rustup.rs/) 稳定版工具链
 - Windows 操作系统
 
 ### 本地开发
 
 ```bash
-# 安装 Node 依赖
-npm install
+# 进入目录
+cd WoWFontsHappy/Code/src-tauri
 
-# 启动 Tauri 桌面客户端
-npm run desktop
+# 运行开发版本
+cargo tauri dev
+
+# 构建发布版本
+cargo tauri build
 ```
 
-### 构建可执行文件
-
-#### 本地打包
-
-```bash
-# 构建 Tauri 桌面程序本体（不需要 NSIS/WiX）
-npm run build
-
-# 构建 NSIS 安装包（发布环境使用）
-npm run build:installer
-```
-
-桌面程序本体位于 `src-tauri/target/release/wowfontshappy.exe`；NSIS 安装包位于 `src-tauri/target/release/bundle/`。
-
-#### GitHub Actions 自动打包
+### GitHub Actions 自动打包
 
 推送标签自动触发构建并创建 Release：
 
@@ -204,8 +162,6 @@ WoWFontsHappy/
 │   │   ├── lib.rs           # Tauri 命令：字体扫描、预览、复制等本地能力
 │   │   └── main.rs
 │   └── tauri.conf.json
-├── package.json             # 项目配置
-├── package-lock.json        # 依赖锁定
 └── README.md                # 项目说明
 ```
 
@@ -224,7 +180,6 @@ WoWFontsHappy/
 1. **管理员权限**: 创建 WoW 字体文件夹需要管理员权限，建议右键以管理员身份运行
 2. **游戏关闭**: 修改字体前请确保 WoW 客户端已关闭
 3. **字体版权**: 请确保使用的字体拥有合法授权
-4. **桌面打包**: Release 安装包为标准 Tauri 应用，不需要 Node.js，也不会启动 3456 端口服务
 
 ---
 
